@@ -22,7 +22,7 @@ export function AuthButton() {
 
   return (
     <button
-      onClick={() => signIn("google")}
+      onClick={() => signIn("google", { callbackUrl: "/" })}
       className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600"
     >
       Iniciar amb Google

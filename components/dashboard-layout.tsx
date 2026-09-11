@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useSession } from "next-auth/react";
 import { AuthButton } from "@/components/auth-button";
 
 const navItems = [
@@ -10,6 +13,9 @@ const navItems = [
 ];
 
 export function DashboardLayout({ children }: { children: ReactNode }) {
+  const { data: session } = useSession();
+  const userName = session?.user?.name ?? "Usuari";
+
   return (
     <div className="min-h-screen bg-[#f9faf7] text-slate-800">
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur-sm sticky top-0 z-20">
@@ -37,9 +43,18 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
-              Entrar amb codi
-            </button>
+            {session ? (
+              <div className="hidden items-center gap-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 md:flex">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white">
+                  {userName.charAt(0).toUpperCase()}
+                </span>
+                <span>{userName}</span>
+              </div>
+            ) : (
+              <button className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm">
+                Entrar amb codi
+              </button>
+            )}
             <AuthButton />
           </div>
         </div>

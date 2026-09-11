@@ -33,15 +33,17 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) {
-        return `${baseUrl}${url}`;
+      const nextUrl = new URL(url, baseUrl);
+
+      if (nextUrl.origin !== baseUrl) {
+        return baseUrl;
       }
 
-      if (new URL(url).origin === baseUrl) {
-        return url;
+      if (nextUrl.pathname.startsWith("/api/auth/callback")) {
+        return baseUrl;
       }
 
-      return baseUrl;
+      return nextUrl.toString();
     },
     async jwt({ token, user }) {
       if (user) {
