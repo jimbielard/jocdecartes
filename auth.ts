@@ -31,29 +31,18 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-callbacks: {
-  async redirect({ url, baseUrl }) {
-    if (url.startsWith("/")) {
-      return `${baseUrl}${url}`;
-    }
+  callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
 
-    if (new URL(url).origin === baseUrl) {
-      return url;
-    }
+      if (new URL(url).origin === baseUrl) {
+        return url;
+      }
 
-    return baseUrl;
-  },
-  async redirect({ url, baseUrl }) {
-    if (url.startsWith("/")) {
-      return `${baseUrl}${url}`;
-    }
-
-    if (new URL(url).origin === baseUrl) {
-      return url;
-    }
-
-    return baseUrl;
-  },
+      return baseUrl;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -70,19 +59,12 @@ callbacks: {
               ? token.sub
               : null;
 
-        const avatarSource =
-          typeof user?.image === "string"
-            ? user.image
-            : typeof user?.avatar === "string"
-              ? user.avatar
-              : null;
-
         if (userId) {
           session.user.id = userId;
         }
 
         session.user.name = session.user.name ?? user?.name ?? "Usuari";
-        session.user.image = avatarSource ?? session.user.image ?? null;
+        session.user.image = user?.image ?? session.user.image ?? null;
       }
 
       return session;
@@ -97,21 +79,25 @@ callbacks: {
       }
 
       if (account?.provider === "google" && profile) {
-        const googleProfile = profile as GoogleProfileShape;
-        const avatar = typeof user.avatar === "string" ? user.avatar : null;
-        const profileImage = avatar ?? user.image ?? googleProfile.picture ?? null;
+        const googleProfile = profile as GoogleProfileShape & { sub?: string };
+        const profileImage = user.image ?? googleProfile.picture ?? null;
         const normalizedAvatar = typeof profileImage === "string" ? profileImage : null;
+        const googleUserId = user.id ?? googleProfile.sub ?? user.email;
+
+        if (!googleUserId) {
+          return false;
+        }
 
         await prisma.user.upsert({
           where: { email: user.email },
           update: {
-            googleId: user.id,
+            googleId: googleUserId,
             name: user.name ?? googleProfile.name ?? "Usuari",
             avatar: normalizedAvatar,
             email: user.email,
           },
           create: {
-            googleId: user.id,
+            googleId: googleUserId,
             email: user.email,
             name: user.name ?? googleProfile.name ?? "Usuari",
             avatar: normalizedAvatar,
