@@ -9,10 +9,12 @@ type GoogleProfileShape = {
   picture?: string | null;
 };
 
+const hasDatabaseConfiguration = Boolean(process.env.DATABASE_URL);
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: hasDatabaseConfiguration ? PrismaAdapter(prisma) : undefined,
   session: {
-    strategy: "database",
+    strategy: hasDatabaseConfiguration ? "database" : "jwt",
   },
   providers: [
     GoogleProvider({
@@ -30,13 +32,34 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        const userId = typeof user.id === "string" ? user.id : String(user.id ?? "");
-        const avatarSource = typeof user.avatar === "string" ? user.avatar : null;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
 
-        session.user.id = userId;
-        session.user.name = user.name ?? session.user.name;
+      return token;
+    },
+    async session({ session, token, user }) {
+      if (session.user) {
+        const userId =
+          typeof user?.id === "string"
+            ? user.id
+            : typeof token?.sub === "string"
+              ? token.sub
+              : null;
+
+        const avatarSource =
+          typeof user?.image === "string"
+            ? user.image
+            : typeof user?.avatar === "string"
+              ? user.avatar
+              : null;
+
+        if (userId) {
+          session.user.id = userId;
+        }
+
+        session.user.name = session.user.name ?? user?.name ?? "Usuari";
         session.user.image = avatarSource ?? session.user.image ?? null;
       }
 
@@ -45,6 +68,10 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       if (!user.email) {
         return false;
+      }
+
+      if (!hasDatabaseConfiguration) {
+        return true;
       }
 
       if (account?.provider === "google" && profile) {
