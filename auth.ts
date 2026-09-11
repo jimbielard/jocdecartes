@@ -31,7 +31,29 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  callbacks: {
+callbacks: {
+  async redirect({ url, baseUrl }) {
+    if (url.startsWith("/")) {
+      return `${baseUrl}${url}`;
+    }
+
+    if (new URL(url).origin === baseUrl) {
+      return url;
+    }
+
+    return baseUrl;
+  },
+  async redirect({ url, baseUrl }) {
+    if (url.startsWith("/")) {
+      return `${baseUrl}${url}`;
+    }
+
+    if (new URL(url).origin === baseUrl) {
+      return url;
+    }
+
+    return baseUrl;
+  },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
