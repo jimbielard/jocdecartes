@@ -1,8 +1,27 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect } from "react";
 import { AuthButton } from "@/components/auth-button";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { status } = useSession();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/");
+      return;
+    }
+
+    if (status === "unauthenticated") {
+      signIn("google", { callbackUrl: "/" });
+    }
+  }, [status, router]);
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-orange-50 via-white to-slate-100 p-4">
       <div className="soft-card w-full max-w-md p-6 md:p-8">
