@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import {
   ArrowRight,
   ChefHat,
@@ -9,6 +11,7 @@ import {
   Star,
   Users,
 } from "lucide-react";
+import { authOptions } from "@/auth";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { categories, mockMyRatings, mockUser } from "@/lib/mock-data";
 
@@ -21,7 +24,13 @@ const quickActions = [
   { label: "El meu perfil", href: "/profile", icon: Users },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    redirect("/api/auth/signin/google?callbackUrl=/");
+  }
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
