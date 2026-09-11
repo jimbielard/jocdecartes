@@ -25,12 +25,6 @@ const quickActions = [
 ];
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session) {
-    redirect("/api/auth/signin/google?callbackUrl=/");
-  }
-
   return (
     <DashboardLayout>
       <div className="space-y-6">
