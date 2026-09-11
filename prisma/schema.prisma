@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRestaurantSource {
+  ADDED_BY_USER
+  SESSION_CREATED
+  SESSION_PARTICIPATION
+}
+
+enum SessionStatus {
+  OPEN
+  REGISTRATION_CLOSED
+  VOTING
+  ALL_VOTED
+  FINISHED
+}
+
+enum ParticipantStatus {
+  CONNECTAT
+  ESPERANT
+  VOTANT
+  FINALITZAT
+}
+
+enum RatingStatus {
+  DRAFT
+  SUBMITTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String
+  alias     String?
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  restaurants UserRestaurant[]
+  sessions    Session[]
+  ratings     Rating[]
+  participants SessionParticipant[]
+}
+
+model Restaurant {
+  id            String   @id @default(cuid())
+  googlePlaceId String?  @unique
+  name          String
+  address       String?
+  city          String?
+  latitude      Float?
+  longitude     Float?
+  cuisine       String?
+  phone         String?
+  website       String?
+  googleRating  Float?
+  photo         String?
+  active        Boolean  @default(true)
+  createdByUserId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userLinks     UserRestaurant[]
+  sessionLinks  Session[]
+  ratings       Rating[]
+}
+
+model UserRestaurant {
+  id             String               @id @default(cuid())
+  userId         String
+  restaurantId   String
+  source         UserRestaurantSource
+  firstSessionId String?
+  addedAt        DateTime             @default(now())
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, restaurantId])
+}
+
+model Category {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  slug      String  @unique
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  sessionCategories SessionCategory[]
+  ratingScores     RatingScore[]
+}
+
+model Session {
+  id                 String        @id @default(cuid())
+  code               String        @unique
+  restaurantId       String
+  adminUserId        String
+  status             SessionStatus @default(OPEN)
+  registrationClosedAt DateTime?
+  votingStartedAt     DateTime?
+  finishedAt          DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  restaurant       Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  admin            User              @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  categories       SessionCategory[]
+  participants     SessionParticipant[]
+  ratings          Rating[]
+}
+
+model SessionCategory {
+  id        String  @id @default(cuid())
+  sessionId String
+  categoryId String
+  enabled   Boolean @default(true)
+
+  session  Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, categoryId])
+}
+
+model SessionParticipant {
+  id              String           @id @default(cuid())
+  sessionId       String
+  userId          String
+  status          ParticipantStatus @default(ESPERANT)
+  joinedAt        DateTime         @default(now())
+  finishedVotingAt DateTime?
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+}
+
+model Rating {
+  id          String       @id @default(cuid())
+  sessionId   String
+  restaurantId String
+  userId      String
+  status      RatingStatus @default(DRAFT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  submittedAt DateTime?
+
+  session    Session       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  restaurant Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scores     RatingScore[]
+
+  @@unique([sessionId, userId])
+}
+
+model RatingScore {
+  id         String @id @default(cuid())
+  ratingId   String
+  categoryId String
+  score      Int
+
+  rating   Rating   @relation(fields: [ratingId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([ratingId, categoryId])
+}
